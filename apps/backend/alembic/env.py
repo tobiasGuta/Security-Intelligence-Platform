@@ -7,7 +7,7 @@ from alembic import context
 
 from app.core.config import get_settings
 from app.db.base import Base
-from app.models.user import User  # noqa: F401
+from app.models import *  # noqa: F401, F403
 
 config = context.config
 settings = get_settings()

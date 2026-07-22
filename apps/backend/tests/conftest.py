@@ -1,4 +1,3 @@
-import asyncio
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
@@ -8,13 +7,6 @@ from redis.asyncio import Redis
 from app.core.config import get_settings
 from app.main import app as fastapi_app
 from app.core.deps import get_db
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest.fixture(scope="session")
@@ -39,8 +31,8 @@ def settings():
     return settings
 
 
-@pytest_asyncio.fixture(scope="session", autouse=True)
-async def setup_database(settings):
+@pytest.fixture(scope="session", autouse=True)
+def setup_database(settings):
     # Ensure database exists if possible, but postgres-test container should create it
     # We will just run Alembic upgrade head
     from alembic import command
@@ -50,22 +42,18 @@ async def setup_database(settings):
     alembic_cfg.set_main_option("sqlalchemy.url", settings.TEST_DATABASE_URL)
 
     # Run Alembic migrations synchronously
-    def run_upgrade():
-        command.upgrade(alembic_cfg, "head")
-
-    def run_downgrade():
-        command.downgrade(alembic_cfg, "base")
-
-    await asyncio.to_thread(run_upgrade)
+    command.upgrade(alembic_cfg, "head")
 
     yield
 
-    await asyncio.to_thread(run_downgrade)
+    # Do not downgrade, let the schema persist. Transactions handle isolation.
 
 
 @pytest_asyncio.fixture
 async def db_session(settings):
-    engine = create_async_engine(settings.TEST_DATABASE_URL)
+    from sqlalchemy.pool import NullPool
+
+    engine = create_async_engine(settings.TEST_DATABASE_URL, poolclass=NullPool)
     connection = await engine.connect()
     transaction = await connection.begin()
 
