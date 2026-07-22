@@ -71,9 +71,7 @@ export function Sidebar({ user }: { user: User }) {
   };
 
   const isActive = (href: string) =>
-    href === "/dashboard"
-      ? pathname === href
-      : pathname.startsWith(href);
+    href === "/dashboard" ? pathname === href : pathname.startsWith(href);
 
   return (
     <aside className="w-60 shrink-0 border-r border-border bg-card flex flex-col">
@@ -116,13 +114,15 @@ export function Sidebar({ user }: { user: User }) {
                       "flex items-center gap-3 px-2.5 py-2 rounded-md text-sm transition-colors group",
                       active
                         ? "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <item.icon
                       className={cn(
                         "h-4 w-4 shrink-0 transition-colors",
-                        active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                        active
+                          ? "text-primary"
+                          : "text-muted-foreground group-hover:text-foreground",
                       )}
                     />
                     <span className="flex-1 truncate">{item.title}</span>

@@ -3,8 +3,8 @@ import signal
 import sys
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
-from apscheduler.schedulers.background import BackgroundScheduler # type: ignore
-from apscheduler.jobstores.redis import RedisJobStore # type: ignore
+from apscheduler.schedulers.background import BackgroundScheduler  # type: ignore
+from apscheduler.jobstores.redis import RedisJobStore  # type: ignore
 from app.core.config import get_settings
 import structlog
 
@@ -14,17 +14,19 @@ logger = structlog.get_logger()
 redis_broker = RedisBroker(url=settings.REDIS_URL)
 dramatiq.set_broker(redis_broker)
 
+
 def main():
     from urllib.parse import urlparse
+
     parsed = urlparse(settings.REDIS_URL)
     jobstores = {
-        'default': RedisJobStore(
-            jobs_key='apscheduler.jobs',
-            run_times_key='apscheduler.run_times',
+        "default": RedisJobStore(
+            jobs_key="apscheduler.jobs",
+            run_times_key="apscheduler.run_times",
             host=parsed.hostname,
             port=parsed.port,
             password=parsed.password,
-            db=0
+            db=0,
         )
     }
 
@@ -46,6 +48,7 @@ def main():
             time.sleep(1)
     except (KeyboardInterrupt, SystemExit):
         scheduler.shutdown()
+
 
 if __name__ == "__main__":
     main()

@@ -51,7 +51,7 @@ describe("LoginPage", () => {
     render(
       <Wrapper>
         <LoginPage />
-      </Wrapper>
+      </Wrapper>,
     );
 
     expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
@@ -63,11 +63,11 @@ describe("LoginPage", () => {
     render(
       <Wrapper>
         <LoginPage />
-      </Wrapper>
+      </Wrapper>,
     );
 
     expect(
-      screen.getByRole("button", { name: /sign in/i })
+      screen.getByRole("button", { name: /sign in/i }),
     ).toBeInTheDocument();
   });
 
@@ -76,7 +76,7 @@ describe("LoginPage", () => {
     render(
       <Wrapper>
         <LoginPage />
-      </Wrapper>
+      </Wrapper>,
     );
 
     expect(screen.getByText(/intel platform/i)).toBeInTheDocument();

@@ -32,17 +32,21 @@ format: ## Format Python and frontend code
 	cd apps/web && npx prettier --write .
 
 lint: ## Lint Python and frontend code
-	$(COMPOSE) run --rm api bash -c "uv pip install --system -e '.[dev]' && ruff check . && mypy app"
+	$(COMPOSE) run --rm api bash -c "ruff check . && mypy app"
 	cd apps/web && npm run lint
 
 typecheck: ## Run TypeScript type check
 	cd apps/web && npm run type-check
 
 test-unit: ## Run backend unit tests
-	$(COMPOSE) run --rm api bash -c "uv pip install --system -e '.[dev]' && pytest tests/unit -v --tb=short"
+	$(COMPOSE) --profile test up -d postgres-test redis-test
+	$(COMPOSE) run --rm -e APP_ENV=testing -e TEST_DATABASE_URL=postgresql+asyncpg://sip:sip_test_password@postgres-test:5432/sip_test -e REDIS_URL=redis://:sip_test_password@redis-test:6379/1 api bash -c "pytest tests/unit -v --tb=short"
+	$(COMPOSE) --profile test down
 
 test-integration: ## Run backend integration tests (requires running postgres + redis)
-	$(COMPOSE) run --rm -e DATABASE_URL=postgresql+asyncpg://sip:sip_dev_password@postgres:5432/sip_test api bash -c "uv pip install --system -e '.[dev]' && pytest tests/integration -v --tb=short"
+	$(COMPOSE) --profile test up -d postgres-test redis-test
+	$(COMPOSE) run --rm -e APP_ENV=testing -e TEST_DATABASE_URL=postgresql+asyncpg://sip:sip_test_password@postgres-test:5432/sip_test -e REDIS_URL=redis://:sip_test_password@redis-test:6379/1 api bash -c "pytest tests/integration -v --tb=short"
+	$(COMPOSE) --profile test down
 
 test-frontend: ## Run frontend unit tests
 	cd apps/web && npm test

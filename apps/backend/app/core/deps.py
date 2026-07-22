@@ -1,7 +1,9 @@
 """
 FastAPI dependency functions.
 """
+
 from typing import AsyncGenerator, Dict
+import urllib.parse
 from fastapi import Depends, Request, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
@@ -72,8 +74,6 @@ async def get_current_user(
     return user
 
 
-from redis.asyncio import Redis
-
 async def verify_csrf(
     request: Request,
     redis: Redis = Depends(get_redis),
@@ -82,35 +82,55 @@ async def verify_csrf(
     """Validate X-CSRF-Token header against the session token for state-changing requests."""
     if request.method in {"GET", "HEAD", "OPTIONS", "TRACE"}:
         return
-        
+
     if request.url.path == "/api/v1/auth/login":
         return
 
     # Check origin/referer
     origin = request.headers.get("origin")
     referer = request.headers.get("referer")
-    
-    if not origin and not referer:
+
+    source_origin = origin
+    if not source_origin and referer:
+        parsed_ref = urllib.parse.urlparse(referer)
+        source_origin = f"{parsed_ref.scheme}://{parsed_ref.netloc}"
+
+    if not source_origin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Missing Origin or Referer header",
         )
-        
+
+    if source_origin not in settings.CORS_ALLOWED_ORIGINS:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Untrusted Origin or Referer",
+        )
+
     cookie_name = _get_cookie_name(settings)
     session_id = request.cookies.get(cookie_name)
-    
+
     if not session_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-        
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+        )
+
     session = await get_session(redis, session_id, settings)
     if not session:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired"
+        )
 
     csrf_token = request.headers.get("X-CSRF-Token")
     session_csrf = session.get("csrf_token")
-    
+
     import secrets
-    if not csrf_token or not session_csrf or not secrets.compare_digest(csrf_token, session_csrf):
+
+    if (
+        not csrf_token
+        or not session_csrf
+        or not secrets.compare_digest(csrf_token, session_csrf)
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="CSRF token missing or invalid",

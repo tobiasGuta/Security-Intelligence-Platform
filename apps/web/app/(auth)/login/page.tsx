@@ -48,7 +48,7 @@ export default function LoginPage() {
     try {
       const response = await apiPost<{ csrf_token: string }>(
         "/auth/login",
-        data
+        data,
       );
       if (response && response.csrf_token) {
         setCsrfToken(response.csrf_token);

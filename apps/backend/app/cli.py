@@ -5,6 +5,7 @@ from app.db.engine import async_session_factory
 from app.models.user import User
 from app.core.security import hash_password
 
+
 async def create_user_async(username, email, password, is_superuser):
     async with async_session_factory() as session:
         result = await session.execute(select(User).where(User.username == username))
@@ -17,34 +18,43 @@ async def create_user_async(username, email, password, is_superuser):
             email=email,
             hashed_password=hash_password(password),
             is_superuser=is_superuser,
-            is_active=True
+            is_active=True,
         )
         session.add(user)
         await session.commit()
         click.echo(f"User {username} created successfully.")
 
+
 @click.group()
 def cli():
     pass
 
+
 @cli.command()
-@click.option('--username', prompt=True)
-@click.option('--email', prompt=True)
-@click.option('--password', prompt=True, hide_input=True, confirmation_prompt=True)
+@click.option("--username", prompt=True)
+@click.option("--email", prompt=True)
+@click.option("--password", prompt=True, hide_input=True, confirmation_prompt=True)
 def create_admin(username, email, password):
     asyncio.run(create_user_async(username, email, password, True))
+
 
 @cli.command()
 def seed_dev():
     from app.core.config import get_settings
+
     settings = get_settings()
     if settings.APP_ENV != "development":
-        click.secho("ERROR: seed_dev is only allowed in development environment", fg="red", err=True)
+        click.secho(
+            "ERROR: seed_dev is only allowed in development environment",
+            fg="red",
+            err=True,
+        )
         raise click.Abort()
-        
+
     click.secho("!!! WARNING: DEV ONLY !!!", fg="red", bold=True)
     asyncio.run(create_user_async("devadmin", "dev@example.com", "devpass123", True))
     click.echo("Credentials: devadmin / devpass123")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     cli()

@@ -4,26 +4,39 @@ Structured logging configuration using structlog.
 Call configure_logging() once at application startup.
 Use get_logger() anywhere to obtain a bound logger.
 """
+
 import logging
 import sys
 import structlog
 
 import re
 
+
 def redact_secrets(logger, log_method, event_dict):
     """Redact sensitive information from log events."""
     # Regex to match postgresql://user:password@host
-    url_pattern = re.compile(r'(?P<scheme>\w+://)(?P<user>[^:]+):(?P<password>[^@]+)@(?P<rest>.*)')
-    
+    url_pattern = re.compile(
+        r"(?P<scheme>\w+://)(?P<user>[^:]+):(?P<password>[^@]+)@(?P<rest>.*)"
+    )
+
     for key, value in event_dict.items():
         if isinstance(value, str):
             # Redact URLs
             if "://" in value and "@" in value:
-                event_dict[key] = url_pattern.sub(r'\g<scheme>\g<user>:***@\g<rest>', value)
+                event_dict[key] = url_pattern.sub(
+                    r"\g<scheme>\g<user>:***@\g<rest>", value
+                )
             # Redact session tokens or CSRF tokens if explicitly logged
-            if key.lower() in ("session_id", "csrf_token", "password", "token", "secret"):
+            if key.lower() in (
+                "session_id",
+                "csrf_token",
+                "password",
+                "token",
+                "secret",
+            ):
                 event_dict[key] = "***"
     return event_dict
+
 
 def configure_logging() -> None:
     """Configure structlog with environment-appropriate renderer."""

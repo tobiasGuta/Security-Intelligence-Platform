@@ -67,7 +67,7 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -112,6 +112,31 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+
+  postgres-test:
+    image: postgres:17-alpine
+    profiles: ["test"]
+    environment:
+      POSTGRES_DB: sip_test
+      POSTGRES_USER: sip
+      POSTGRES_PASSWORD: sip_test_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sip -d sip_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  redis-test:
+    image: redis:7-alpine
+    profiles: ["test"]
+    command: redis-server --requirepass sip_test_password --appendonly no
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "sip_test_password", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
 volumes:
   pgdata:

@@ -35,7 +35,7 @@ function getBaseUrl(): string {
  */
 async function fetchWithAuth<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T> {
   const url = `${getBaseUrl()}/api/v1${path}`;
 
@@ -49,7 +49,8 @@ async function fetchWithAuth<T>(
     typeof window !== "undefined" &&
     ["POST", "PUT", "PATCH", "DELETE"].includes(method)
   ) {
-    const token = (window as Window & { __CSRF_TOKEN__?: string }).__CSRF_TOKEN__;
+    const token = (window as Window & { __CSRF_TOKEN__?: string })
+      .__CSRF_TOKEN__;
     if (token) {
       headers.set("X-CSRF-Token", token);
     }
@@ -110,7 +111,7 @@ export function apiGet<T>(path: string, options?: RequestInit): Promise<T> {
 export function apiPost<T>(
   path: string,
   body?: unknown,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<T> {
   return fetchWithAuth<T>(path, {
     ...options,
@@ -122,7 +123,7 @@ export function apiPost<T>(
 export function apiPatch<T>(
   path: string,
   body?: unknown,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<T> {
   return fetchWithAuth<T>(path, {
     ...options,
@@ -134,7 +135,7 @@ export function apiPatch<T>(
 export function apiPut<T>(
   path: string,
   body?: unknown,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<T> {
   return fetchWithAuth<T>(path, {
     ...options,

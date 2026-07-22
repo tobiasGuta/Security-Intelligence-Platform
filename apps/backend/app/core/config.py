@@ -3,10 +3,12 @@ from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 
+
 class Settings(BaseSettings):
     DATABASE_URL: str
+    TEST_DATABASE_URL: str | None = None
     REDIS_URL: str
-    APP_ENV: Literal["development", "production"] = "development"
+    APP_ENV: Literal["development", "production", "testing"] = "development"
     SECRET_KEY: str = Field(min_length=32)
     SESSION_SECRET: str = Field(min_length=32)
     SESSION_IDLE_HOURS: int = 4
@@ -17,9 +19,12 @@ class Settings(BaseSettings):
     RATE_LIMIT_LOGIN_ATTEMPTS: int = 10
     RATE_LIMIT_LOGIN_WINDOW_SECONDS: int = 900
     NVD_INITIAL_SYNC_DAYS: int = 120
-    
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings() # type: ignore[call-arg]
+    return Settings()  # type: ignore[call-arg]

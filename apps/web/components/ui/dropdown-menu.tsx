@@ -27,7 +27,7 @@ const DropdownMenuContent = ({
   <div
     className={cn(
       "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
-      className
+      className,
     )}
   >
     {children}
@@ -50,7 +50,7 @@ const DropdownMenuItem = ({
     onKeyDown={(e) => e.key === "Enter" && onClick?.()}
     className={cn(
       "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-      className
+      className,
     )}
   >
     {children}
