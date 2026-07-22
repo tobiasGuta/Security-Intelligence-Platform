@@ -1,0 +1,112 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sip}
+      POSTGRES_USER: ${POSTGRES_USER:-sip}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sip} -d ${POSTGRES_DB:-sip}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD required} --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-sip}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sip}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - APP_ENV=${APP_ENV:-development}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY required}
+      - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET required}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-'["http://localhost:3000"]'}
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - NODE_ENV=production
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./apps/worker
+      dockerfile: Dockerfile
+    environment:
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-sip}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sip}
+      - APP_ENV=${APP_ENV:-development}
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: ./apps/scheduler
+      dockerfile: Dockerfile
+    environment:
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-sip}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sip}
+      - APP_ENV=${APP_ENV:-development}
+      - SCHED_NVD_INTERVAL_HOURS=${SCHED_NVD_INTERVAL_HOURS:-2}
+      - SCHED_KEV_INTERVAL_HOURS=${SCHED_KEV_INTERVAL_HOURS:-6}
+      - SCHED_EPSS_CRON=${SCHED_EPSS_CRON:-0 6 * * *}
+      - SCHED_ALERT_INTERVAL_MINUTES=${SCHED_ALERT_INTERVAL_MINUTES:-15}
+      - SCHED_WEBHOOK_RETRY_INTERVAL_MINUTES=${SCHED_WEBHOOK_RETRY_INTERVAL_MINUTES:-30}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
