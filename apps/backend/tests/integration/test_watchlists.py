@@ -36,8 +36,9 @@ async def test_watchlist_user_ownership(db_session: AsyncSession):
     rule1 = AlertRule(
         user_id=user1.id,
         watchlist_id=wl1.id,
+        name="Test Rule",
         cvss_threshold=7.0,
-        action=AlertAction.EMAIL,
+        action=AlertAction.IN_APP_NOTIFICATION,
     )
     db_session.add(rule1)
     await db_session.commit()

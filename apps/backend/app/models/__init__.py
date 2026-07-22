@@ -4,6 +4,8 @@ from app.models.vulnerability import (
     VulnerabilitySourceRecord,
     VulnerabilityProvenance,
     VulnerabilityDisagreement,
+    VulnerabilityCvss,
+    VulnerabilityReference,
     Vendor,
     Product,
     VersionRange,
@@ -16,13 +18,16 @@ from app.models.watchlist import (
     WatchlistCve,
     WatchlistVendor,
     WatchlistProduct,
+    WatchlistKeyword,
+    WatchlistCwe as WatchlistCweModel,
 )
 from app.models.alert import (
     AlertRule,
     AlertEvent,
     NotificationDelivery,
+    WebhookEndpoint,
 )
-from app.models.connector import ConnectorState
+from app.models.connector import ConnectorSyncRun
 
 __all__ = [
     "User",
@@ -30,6 +35,8 @@ __all__ = [
     "VulnerabilitySourceRecord",
     "VulnerabilityProvenance",
     "VulnerabilityDisagreement",
+    "VulnerabilityCvss",
+    "VulnerabilityReference",
     "Vendor",
     "Product",
     "VersionRange",
@@ -40,8 +47,11 @@ __all__ = [
     "WatchlistCve",
     "WatchlistVendor",
     "WatchlistProduct",
+    "WatchlistKeyword",
+    "WatchlistCweModel",
     "AlertRule",
     "AlertEvent",
     "NotificationDelivery",
-    "ConnectorState",
+    "WebhookEndpoint",
+    "ConnectorSyncRun",
 ]
