@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Install dependencies first for caching
 COPY . .
-RUN uv pip install --system .
+RUN uv pip install --system ".[dev]"
 
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser

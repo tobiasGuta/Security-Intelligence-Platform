@@ -72,16 +72,46 @@ async def get_current_user(
     return user
 
 
+from redis.asyncio import Redis
+
 async def verify_csrf(
     request: Request,
-    session: Dict = Depends(get_current_session),
+    redis: Redis = Depends(get_redis),
+    settings: Settings = Depends(get_settings),
 ) -> None:
     """Validate X-CSRF-Token header against the session token for state-changing requests."""
-    if request.method not in {"GET", "HEAD", "OPTIONS", "TRACE"}:
-        csrf_token = request.headers.get("X-CSRF-Token")
-        session_csrf = session.get("csrf_token")
-        if not csrf_token or csrf_token != session_csrf:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="CSRF token missing or invalid",
-            )
+    if request.method in {"GET", "HEAD", "OPTIONS", "TRACE"}:
+        return
+        
+    if request.url.path == "/api/v1/auth/login":
+        return
+
+    # Check origin/referer
+    origin = request.headers.get("origin")
+    referer = request.headers.get("referer")
+    
+    if not origin and not referer:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Missing Origin or Referer header",
+        )
+        
+    cookie_name = _get_cookie_name(settings)
+    session_id = request.cookies.get(cookie_name)
+    
+    if not session_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+        
+    session = await get_session(redis, session_id, settings)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired")
+
+    csrf_token = request.headers.get("X-CSRF-Token")
+    session_csrf = session.get("csrf_token")
+    
+    import secrets
+    if not csrf_token or not session_csrf or not secrets.compare_digest(csrf_token, session_csrf):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="CSRF token missing or invalid",
+        )

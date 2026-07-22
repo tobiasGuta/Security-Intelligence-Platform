@@ -1,20 +1,22 @@
 services:
   api:
     volumes:
-      - ./apps/api:/app
+      - ./apps/backend:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   web:
     volumes:
       - ./apps/web:/app
+      - /app/node_modules
     command: npm run dev
     environment:
       - NODE_ENV=development
 
   worker:
     volumes:
-      - ./apps/worker:/app
+      - ./apps/backend:/app
+    command: ["dramatiq", "app.worker_main", "--watch", "."]
 
   scheduler:
     volumes:
-      - ./apps/scheduler:/app
+      - ./apps/backend:/app

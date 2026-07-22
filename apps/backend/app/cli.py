@@ -36,6 +36,12 @@ def create_admin(username, email, password):
 
 @cli.command()
 def seed_dev():
+    from app.core.config import get_settings
+    settings = get_settings()
+    if settings.APP_ENV != "development":
+        click.secho("ERROR: seed_dev is only allowed in development environment", fg="red", err=True)
+        raise click.Abort()
+        
     click.secho("!!! WARNING: DEV ONLY !!!", fg="red", bold=True)
     asyncio.run(create_user_async("devadmin", "dev@example.com", "devpass123", True))
     click.echo("Credentials: devadmin / devpass123")

@@ -15,7 +15,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Narrow lib to root virtual environments only to avoid ignoring apps/web/lib/
+/lib/
 lib64/
 parts/
 sdist/
@@ -57,6 +58,7 @@ node_modules/
 out/
 .pnp
 .pnp.js
+*.tsbuildinfo
 coverage/
 .nyc_output/
 logs

@@ -30,7 +30,7 @@ services:
 
   api:
     build:
-      context: ./apps/api
+      context: ./apps/backend
       dockerfile: Dockerfile
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-sip}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sip}
@@ -67,7 +67,7 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -76,12 +76,15 @@ services:
 
   worker:
     build:
-      context: ./apps/worker
+      context: ./apps/backend
       dockerfile: Dockerfile
+    command: ["dramatiq", "app.worker_main"]
     environment:
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-sip}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sip}
       - APP_ENV=${APP_ENV:-development}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY required}
+      - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET required}
     depends_on:
       redis:
         condition: service_healthy
@@ -91,12 +94,15 @@ services:
 
   scheduler:
     build:
-      context: ./apps/scheduler
+      context: ./apps/backend
       dockerfile: Dockerfile
+    command: ["python", "-m", "app.scheduler_main"]
     environment:
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-sip}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sip}
       - APP_ENV=${APP_ENV:-development}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY required}
+      - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET required}
       - SCHED_NVD_INTERVAL_HOURS=${SCHED_NVD_INTERVAL_HOURS:-2}
       - SCHED_KEV_INTERVAL_HOURS=${SCHED_KEV_INTERVAL_HOURS:-6}
       - SCHED_EPSS_CRON=${SCHED_EPSS_CRON:-0 6 * * *}

@@ -3,20 +3,14 @@ import signal
 import sys
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.jobstores.redis import RedisJobStore
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from apscheduler.schedulers.background import BackgroundScheduler # type: ignore
+from apscheduler.jobstores.redis import RedisJobStore # type: ignore
+from app.core.config import get_settings
 import structlog
-from app.schedules import register_schedules
 
-class Settings(BaseSettings):
-    REDIS_URL: str
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
-
-settings = Settings()
+settings = get_settings()
 logger = structlog.get_logger()
 
-# Configure Dramatiq Broker
 redis_broker = RedisBroker(url=settings.REDIS_URL)
 dramatiq.set_broker(redis_broker)
 
@@ -35,7 +29,6 @@ def main():
     }
 
     scheduler = BackgroundScheduler(jobstores=jobstores)
-    register_schedules(scheduler)
 
     def shutdown_handler(signum, frame):
         logger.info("Received termination signal, shutting down scheduler...")
